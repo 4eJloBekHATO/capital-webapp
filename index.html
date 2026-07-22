@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Capital Manager — Dashboard</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0B0E14',
+                        cardbg: '#151921',
+                        accent: '#10B981',
+                        accentHover: '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0E14;
+            color: #F3F4F6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="p-4 pb-20 select-none">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-xs font-semibold uppercase tracking-wider text-gray-400">Финансовый капитал</h1>
+            <div class="text-3xl font-extrabold text-white mt-1 tracking-tight" id="total-balance">10,003.40 <span class="text-emerald-500 text-xl font-bold">PLN</span></div>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
+            ⚡
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="bg-cardbg border border-gray-800 rounded-2xl p-3.5">
+            <span class="text-xs text-gray-400 block mb-1">Траты за месяц</span>
+            <span class="text-lg font-bold text-red-400">- 1,420.00 PLN</span>
+        </div>
+        <div class="bg-cardbg border border-gray-800 rounded-2xl p-3.5">
+            <span class="text-xs text-gray-400 block mb-1">Инвестиции (XTB)</span>
+            <span class="text-lg font-bold text-emerald-400">4,047.54 PLN</span>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="bg-cardbg border border-gray-800 rounded-2xl p-4 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold text-gray-200">Расходы по категориям</h2>
+            <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-medium">Июль 2026</span>
+        </div>
+        <div class="relative flex justify-center items-center h-48">
+            <canvas id="expensesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Accounts List -->
+    <div class="mb-6">
+        <h2 class="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider text-xs">Мои Счета</h2>
+        <div class="space-y-2.5">
+            <div class="bg-cardbg border border-gray-800/80 rounded-xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🇵🇱</div>
+                    <div>
+                        <div class="text-sm font-semibold text-white">Карта Pekao</div>
+                        <div class="text-xs text-gray-400">Основной счет</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-white">677.40 PLN</div>
+                </div>
+            </div>
+
+            <div class="bg-cardbg border border-gray-800/80 rounded-xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">💵</div>
+                    <div>
+                        <div class="text-sm font-semibold text-white">Наличка PLN</div>
+                        <div class="text-xs text-gray-400">Кэш</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-white">4,400.00 PLN</div>
+                </div>
+            </div>
+
+            <div class="bg-cardbg border border-gray-800/80 rounded-xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-sm">🇪🇺</div>
+                    <div>
+                        <div class="text-sm font-semibold text-white">Наличка EUR</div>
+                        <div class="text-xs text-gray-400">Заначка</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-white">200.00 EUR</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Button -->
+    <button onclick="sendQuickAction()" class="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-black font-extrabold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 text-center">
+        ➕ Записать быстрый расход
+    </button>
+
+    <script>
+        // Init Telegram WebApp
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand(); // Развернуть на весь экран
+            tg.setHeaderColor('#0B0E14');
+            tg.setBackgroundColor('#0B0E14');
+        }
+
+        // Render Chart
+        const ctx = document.getElementById('expensesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Еда/Продукты', 'Аренда', 'Подписки', 'Прочее'],
+                datasets: [{
+                    data: [500, 600, 120, 200],
+                    backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#6B7280'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#9CA3AF',
+                            font: { size: 11, family: 'sans-serif' },
+                            padding: 15,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                cutout: '72%'
+            }
+        });
+
+        function sendQuickAction() {
+            if (tg) {
+                // Отправляет данные обратно боту и закрывает WebApp
+                tg.sendData(JSON.stringify({ action: "open_add_expense_dialog" }));
+            } else {
+                alert("WebApp открыт в браузере, а не внутри Telegram!");
+            }
+        }
+    </script>
+</body>
+</html>
