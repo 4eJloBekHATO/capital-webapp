@@ -149,112 +149,122 @@
     </div>
 
     <script>
-        // ⚠️ ОБЯЗАТЕЛЬНО УКАЖИ ЗДЕСЬ ПУБЛИЧНЫЙ IP ИЛИ ДОМЕН СВОЕГО СЕРВЕРА
-        const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com";
+    // 1. Указываем URL сервера
+    const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com";
 
-        // Инициализируем Telegram WebApp
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-        }
+    // Инициализируем Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
 
-        let chartInstance = null;
+    let chartInstance = null;
 
-        async function loadDashboardData() {
-            // Достаем Telegram ID текущего пользователя
-            const userId = tg?.initDataUnsafe?.user?.id || 123456; 
+    async function loadDashboardData() {
+        // Достаем Telegram ID текущего пользователя
+        const userId = tg?.initDataUnsafe?.user?.id || 123456; 
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/dashboard?user_id=${userId}`);
-                const data = await response.json();
-
-                if (data.error) {
-                    console.error("Ошибка API:", data.error);
-                    document.getElementById("accounts-list").innerHTML = `<div class="empty-state">Ошибка: ${data.error}</div>`;
-                    return;
-                }
-
-                // 1. Выводим общий капитал в PLN
-                const formattedTotal = data.total_balance_pln.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById("total-balance").innerHTML = `${formattedTotal} <span>PLN</span>`;
-
-                // 2. Отрисовываем счета из базы
-                const accountsContainer = document.getElementById("accounts-list");
-                if (data.accounts && data.accounts.length > 0) {
-                    accountsContainer.innerHTML = "";
-                    data.accounts.forEach(acc => {
-                        const formattedBalance = acc.balance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        const accElement = document.createElement("div");
-                        accElement.className = "account-card";
-                        accElement.innerHTML = `
-                            <span class="acc-name">${acc.name}</span>
-                            <span class="acc-balance">${formattedBalance} ${acc.currency}</span>
-                        `;
-                        accountsContainer.appendChild(accElement);
-                    });
-                } else {
-                    accountsContainer.innerHTML = '<div class="empty-state">Счета не найдены</div>';
-                }
-
-                // 3. Рисуем круговую диаграмму расходов
-                if (data.expenses_by_category && Object.keys(data.expenses_by_category).length > 0) {
-                    const categories = Object.keys(data.expenses_by_category);
-                    const amounts = Object.values(data.expenses_by_category);
-                    renderChart(categories, amounts);
-                } else {
-                    renderChart(["Нет расходов"], [1]);
-                }
-
-            } catch (err) {
-                console.error("Ошибка соединения с API:", err);
-                document.getElementById("accounts-list").innerHTML = '<div class="empty-state">Не удалось подключиться к серверу</div>';
-            }
-        }
-
-        function renderChart(labels, data) {
-            const ctx = document.getElementById('expensesChart').getContext('2d');
-            
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-
-            const palette = [
-                '#10b981', '#3b82f6', '#f59e0b', '#ec4899', 
-                '#8b5cf6', '#14b8a6', '#f97316', '#64748b'
-            ];
-
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: palette.slice(0, labels.length),
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#8d9aab',
-                                font: { size: 12 },
-                                padding: 14,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        }
-                    },
-                    cutout: '72%'
+        try {
+            // Исправлено: API_URL вместо API_BASE_URL + добавлен заголовок bypass-tunnel-reminder
+            const response = await fetch(`${API_URL}/api/dashboard?user_id=${userId}`, {
+                headers: {
+                    'bypass-tunnel-reminder': 'true',
+                    'Content-Type': 'application/json'
                 }
             });
+
+            const data = await response.json();
+
+            if (data.error) {
+                console.error("Ошибка API:", data.error);
+                document.getElementById("accounts-list").innerHTML = `<div class="empty-state">Ошибка: ${data.error}</div>`;
+                return;
+            }
+
+            // 1. Выводим общий капитал в PLN
+            const formattedTotal = (data.total_balance_pln || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById("total-balance").innerHTML = `${formattedTotal} <span>PLN</span>`;
+
+            // 2. Отрисовываем счета из базы
+            const accountsContainer = document.getElementById("accounts-list");
+            if (data.accounts && data.accounts.length > 0) {
+                accountsContainer.innerHTML = "";
+                data.accounts.forEach(acc => {
+                    const formattedBalance = acc.balance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const accElement = document.createElement("div");
+                    accElement.className = "account-card";
+                    accElement.innerHTML = `
+                        <span class="acc-name">${acc.name}</span>
+                        <span class="acc-balance">${formattedBalance} ${acc.currency}</span>
+                    `;
+                    accountsContainer.appendChild(accElement);
+                });
+            } else {
+                accountsContainer.innerHTML = '<div class="empty-state">Счета не найдены</div>';
+            }
+
+            // 3. Рисуем круговую диаграмму расходов
+            if (data.expenses_by_category && Object.keys(data.expenses_by_category).length > 0) {
+                const categories = Object.keys(data.expenses_by_category);
+                const amounts = Object.values(data.expenses_by_category);
+                renderChart(categories, amounts);
+            } else {
+                renderChart(["Нет расходов"], [1]);
+            }
+
+        } catch (err) {
+            console.error("Ошибка соединения с API:", err);
+            document.getElementById("accounts-list").innerHTML = '<div class="empty-state">Не удалось подключиться к серверу</div>';
+        }
+    }
+
+    function renderChart(labels, data) {
+        const ctx = document.getElementById('expensesChart').getContext('2d');
+        
+        if (chartInstance) {
+            chartInstance.destroy();
         }
 
+        const palette = [
+            '#10b981', '#3b82f6', '#f59e0b', '#ec4899', 
+            '#8b5cf6', '#14b8a6', '#f97316', '#64748b'
+        ];
+
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: palette.slice(0, labels.length),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#8d9aab',
+                            font: { size: 12 },
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                },
+                cutout: '72%'
+            }
+        });
+    }
+
+    // 🚀 АВТОМАТИЧЕСКИЙ ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+    document.addEventListener("DOMContentLoaded", loadDashboardData);
+</script>
         document.addEventListener("DOMContentLoaded", loadDashboardData);
     </script>
 </body>
