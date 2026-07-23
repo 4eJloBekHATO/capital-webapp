@@ -2,88 +2,150 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Capital Manager Mini App</title>
-    <!-- Telegram WebApp SDK -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Capital Manager</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Chart.js для графиков -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0f141c;
-            --card-bg: #1a222d;
-            --card-border: #263242;
-            --text-primary: #ffffff;
-            --text-secondary: #8d9aab;
-            --accent-green: #10b981;
+            --bg-color: #121824;
+            --card-bg: #1a2232;
+            --card-border: #263147;
+            --text-main: #ffffff;
+            --text-sub: #8292b0;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+            --accent-blue: #3498db;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .header {
-            margin-bottom: 20px;
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            padding-bottom: 30px;
         }
 
-        .subtitle {
+        /* Шапка */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
             font-size: 11px;
             font-weight: 700;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
-        .total-amount {
-            font-size: 30px;
+        .header-amount {
+            font-size: 28px;
             font-weight: 800;
-            color: var(--text-primary);
+            color: #ffffff;
         }
 
-        .total-amount span {
+        .header-amount span {
             color: var(--accent-green);
         }
 
-        .card {
-            background-color: var(--card-bg);
+        .status-badge {
+            width: 36px;
+            height: 36px;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Сеть с двумя блоками верхнего уровня */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .stat-value.red { color: var(--accent-red); }
+        .stat-value.green { color: var(--accent-green); }
+
+        /* График */
+        .chart-card {
+            background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 20px;
         }
 
-        .card-title {
-            font-size: 15px;
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 14px;
-            color: var(--text-primary);
+        }
+
+        .month-badge {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 11px;
+            color: var(--accent-green);
+            font-weight: 600;
         }
 
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 260px;
+            max-width: 210px;
             margin: 0 auto;
         }
 
+        /* Счета */
         .section-title {
             font-size: 11px;
             font-weight: 700;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: var(--text-secondary);
-            margin: 0 0 12px 4px;
+            margin-bottom: 10px;
         }
 
         .accounts-list {
@@ -92,8 +154,8 @@
             gap: 10px;
         }
 
-        .account-card {
-            background-color: var(--card-bg);
+        .account-item {
+            background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 14px;
             padding: 14px 16px;
@@ -102,168 +164,189 @@
             align-items: center;
         }
 
-        .acc-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
+        .account-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .acc-balance {
+        .account-name {
             font-size: 15px;
             font-weight: 700;
-            color: var(--text-primary);
         }
 
-        .empty-state {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 14px;
-            padding: 20px;
+        .account-balance {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
         }
 
-        .loader {
+        .error-banner {
+            display: none;
+            background: rgba(231, 76, 60, 0.15);
+            border: 1px solid var(--accent-red);
+            color: #ff8e8e;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
             text-align: center;
-            padding: 30px;
-            color: var(--text-secondary);
-            font-size: 14px;
+            margin-bottom: 16px;
         }
     </style>
 </head>
 <body>
 
+    <div id="errorBanner" class="error-banner">Не удалось подключиться к серверу</div>
+
+    <!-- Шапка -->
     <div class="header">
-        <div class="subtitle">Финансовый капитал</div>
-        <div class="total-amount" id="total-balance">0.00 <span>PLN</span></div>
+        <div>
+            <div class="header-title">Финансовый капитал</div>
+            <div class="header-amount" id="totalCapital">0.00 <span>PLN</span></div>
+        </div>
+        <div class="status-badge">⚡</div>
     </div>
 
-    <div class="card">
-        <div class="card-title">Расходы по категориям</div>
+    <!-- Траты / Инвестиции -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Траты за месяц</div>
+            <div class="stat-value red" id="monthlyExpenses">- 0.00 PLN</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Инвестиции (XTB)</div>
+            <div class="stat-value green" id="totalInvestments">0.00 PLN</div>
+        </div>
+    </div>
+
+    <!-- График расходов -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div class="chart-title">Расходы по категориям</div>
+            <div class="month-badge" id="monthBadge">Июль 2026</div>
+        </div>
         <div class="chart-container">
             <canvas id="expensesChart"></canvas>
         </div>
     </div>
 
+    <!-- Список счетов -->
     <div class="section-title">Мои счета</div>
-    <div class="accounts-list" id="accounts-list">
-        <div class="loader">Загрузка данных с сервера...</div>
-    </div>
+    <div class="accounts-list" id="accountsList"></div>
 
     <script>
-    // 1. Указываем URL сервера
-    const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com";
+        const tg = window.Telegram?.WebApp;
+        if (tg) tg.expand();
 
-    // Инициализируем Telegram WebApp
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-        tg.ready();
-        tg.expand();
-    }
+        const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com"; 
+        let myChart = null;
 
-    let chartInstance = null;
+        function formatMoney(amount, currency = "PLN") {
+            return new Intl.NumberFormat('ru-RU', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount) + " " + currency;
+        }
 
-    async function loadDashboardData() {
-        // Достаем Telegram ID текущего пользователя
-        const userId = tg?.initDataUnsafe?.user?.id || 123456; 
+        async function loadDashboardData() {
+            const user = tg?.initDataUnsafe?.user;
+            const userId = user?.id || 123456;
 
-        try {
-            // Исправлено: API_URL вместо API_BASE_URL + добавлен заголовок bypass-tunnel-reminder
-            const response = await fetch(`${API_URL}/api/dashboard?user_id=${userId}`, {
-                headers: {
-                    'bypass-tunnel-reminder': 'true',
-                    'Content-Type': 'application/json'
+            try {
+                const response = await fetch(`${API_URL}?user_id=${userId}`);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+
+                const data = await response.json();
+                document.getElementById('errorBanner').style.display = 'none';
+
+                // 1. Заполняем цифры
+                document.getElementById('totalCapital').innerHTML = formatMoney(data.total_balance_pln, "").trim() + " <span>PLN</span>";
+                document.getElementById('monthlyExpenses').innerText = "- " + formatMoney(data.total_expenses_month_pln, "PLN");
+                document.getElementById('totalInvestments').innerText = formatMoney(data.total_investments_pln, "PLN");
+                document.getElementById('monthBadge').innerText = data.month_label || "Текущий месяц";
+
+                // 2. Рендерим счета
+                const accountsContainer = document.getElementById('accountsList');
+                accountsContainer.innerHTML = '';
+
+                if (data.accounts && data.accounts.length > 0) {
+                    data.accounts.forEach(acc => {
+                        const item = document.createElement('div');
+                        item.className = 'account-item';
+                        item.innerHTML = `
+                            <div class="account-info">
+                                <div class="account-name">${acc.name}</div>
+                            </div>
+                            <div class="account-balance">${formatMoney(acc.balance, acc.currency)}</div>
+                        `;
+                        accountsContainer.appendChild(item);
+                    });
+                } else {
+                    accountsContainer.innerHTML = '<div style="color:var(--text-sub);font-size:13px;">Счета не найдены</div>';
                 }
-            });
 
-            const data = await response.json();
+                // 3. Строим диаграмму
+                renderChart(data.expenses_by_category);
 
-            if (data.error) {
-                console.error("Ошибка API:", data.error);
-                document.getElementById("accounts-list").innerHTML = `<div class="empty-state">Ошибка: ${data.error}</div>`;
+            } catch (err) {
+                console.error("Ошибка сети:", err);
+                document.getElementById('errorBanner').style.display = 'block';
+            }
+        }
+
+        function renderChart(expensesObj) {
+            const ctx = document.getElementById('expensesChart').getContext('2d');
+            const labels = Object.keys(expensesObj || {});
+            const values = Object.values(expensesObj || {});
+
+            if (myChart) myChart.destroy();
+
+            if (labels.length === 0) {
+                myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Нет расходов'],
+                        datasets: [{ data: [1], backgroundColor: ['#2ecc71'] }]
+                    },
+                    options: {
+                        cutout: '72%',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#8292b0', font: { size: 12 } } } }
+                    }
+                });
                 return;
             }
 
-            // 1. Выводим общий капитал в PLN
-            const formattedTotal = (data.total_balance_pln || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById("total-balance").innerHTML = `${formattedTotal} <span>PLN</span>`;
+            const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22'];
 
-            // 2. Отрисовываем счета из базы
-            const accountsContainer = document.getElementById("accounts-list");
-            if (data.accounts && data.accounts.length > 0) {
-                accountsContainer.innerHTML = "";
-                data.accounts.forEach(acc => {
-                    const formattedBalance = acc.balance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    const accElement = document.createElement("div");
-                    accElement.className = "account-card";
-                    accElement.innerHTML = `
-                        <span class="acc-name">${acc.name}</span>
-                        <span class="acc-balance">${formattedBalance} ${acc.currency}</span>
-                    `;
-                    accountsContainer.appendChild(accElement);
-                });
-            } else {
-                accountsContainer.innerHTML = '<div class="empty-state">Счета не найдены</div>';
-            }
-
-            // 3. Рисуем круговую диаграмму расходов
-            if (data.expenses_by_category && Object.keys(data.expenses_by_category).length > 0) {
-                const categories = Object.keys(data.expenses_by_category);
-                const amounts = Object.values(data.expenses_by_category);
-                renderChart(categories, amounts);
-            } else {
-                renderChart(["Нет расходов"], [1]);
-            }
-
-        } catch (err) {
-            console.error("Ошибка соединения с API:", err);
-            document.getElementById("accounts-list").innerHTML = '<div class="empty-state">Не удалось подключиться к серверу</div>';
-        }
-    }
-
-    function renderChart(labels, data) {
-        const ctx = document.getElementById('expensesChart').getContext('2d');
-        
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
-
-        const palette = [
-            '#10b981', '#3b82f6', '#f59e0b', '#ec4899', 
-            '#8b5cf6', '#14b8a6', '#f97316', '#64748b'
-        ];
-
-        chartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: palette.slice(0, labels.length),
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: '#8d9aab',
-                            font: { size: 12 },
-                            padding: 14,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#8292b0',
+                                padding: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: { size: 12 }
+                            }
                         }
                     }
-                },
-                cutout: '72%'
-            }
-        });
-    }
+                }
+            });
+        }
 
-    // 🚀 АВТОМАТИЧЕСКИЙ ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
         document.addEventListener("DOMContentLoaded", loadDashboardData);
     </script>
 </body>
-</html>
+</html> 
