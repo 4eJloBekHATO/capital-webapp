@@ -238,7 +238,8 @@
         const tg = window.Telegram?.WebApp;
         if (tg) tg.expand();
 
-        const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com"; 
+        // ⚠️ ИСПРАВЛЕННЫЙ URL (с добавленным /api/dashboard)
+        const API_URL = "https://discretion-posters-garden-explore.trycloudflare.com/api/dashboard"; 
         let myChart = null;
 
         function formatMoney(amount, currency = "PLN") {
@@ -253,7 +254,13 @@
             const userId = user?.id || 123456;
 
             try {
-                const response = await fetch(`${API_URL}?user_id=${userId}`);
+                // Добавлены заголовки для bypass предупреждений Cloudflare
+                const response = await fetch(`${API_URL}?user_id=${userId}`, {
+                    headers: {
+                        'bypass-tunnel-reminder': 'true'
+                    }
+                });
+
                 if (!response.ok) throw new Error("HTTP " + response.status);
 
                 const data = await response.json();
@@ -261,9 +268,9 @@
 
                 // 1. Заполняем цифры
                 document.getElementById('totalCapital').innerHTML = formatMoney(data.total_balance_pln, "").trim() + " <span>PLN</span>";
-                document.getElementById('monthlyExpenses').innerText = "- " + formatMoney(data.total_expenses_month_pln, "PLN");
-                document.getElementById('totalInvestments').innerText = formatMoney(data.total_investments_pln, "PLN");
-                document.getElementById('monthBadge').innerText = data.month_label || "Текущий месяц";
+                document.getElementById('monthlyExpenses').innerText = "- " + formatMoney(data.total_expenses_month_pln || 0, "PLN");
+                document.getElementById('totalInvestments').innerText = formatMoney(data.total_investments_pln || 0, "PLN");
+                document.getElementById('monthBadge').innerText = data.month_label || "Июль 2026";
 
                 // 2. Рендерим счета
                 const accountsContainer = document.getElementById('accountsList');
